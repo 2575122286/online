@@ -2,57 +2,75 @@
 <html>
 <head>
   <title>Loading...</title>
-  <!-- Turnstile 隐形验证 -->
+  <!-- Cloudflare Turnstile 隐形验证 -->
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=init" async defer></script>
   
-  <!-- 行为检测脚本 -->
+  <!-- 增强型机器人检测 -->
   <script>
-    // 检测浏览器指纹（简化版）
-    function getFingerprint() {
-      const keys = [
-        'userAgent', 'platform', 'hardwareConcurrency',
-        'deviceMemory', 'screenResolution', 'timezone'
-      ];
-      return keys.map(k => navigator[k]).join('|');
-    }
+    // 检测无头浏览器/自动化工具
+    const isLikelyBot = () => {
+      // 特征1: 检查常见自动化工具 UA
+      const botKeywords = ['Headless', 'PhantomJS', 'Puppeteer', 'Selenium'];
+      const isBotUA = botKeywords.some(k => navigator.userAgent.includes(k));
+      
+      // 特征2: 检查缺失的浏览器 API
+      const isMissingAPIs = (
+        !window.chrome || 
+        !navigator.hardwareConcurrency ||
+        !navigator.plugins.length
+      );
+      
+      // 特征3: 屏幕分辨率异常
+      const isAbnormalScreen = (window.screen.width < 300 || window.screen.height < 300);
+      
+      return isBotUA || isMissingAPIs || isAbnormalScreen;
+    };
 
-    // 行为分析（鼠标/点击/停留时间）
-    let mouseMoves = 0;
-    let startTime = Date.now();
+    // 行为分析（鼠标/键盘/触摸事件）
+    let userInteractions = 0;
+    ['mousemove', 'click', 'keydown', 'touchstart'].forEach(event => {
+      document.addEventListener(event, () => userInteractions++);
+    });
 
-    document.addEventListener('mousemove', () => mouseMoves++);
-
-    // 初始化 Turnstile
+    // 初始化验证
     function init() {
-      // 至少等待 2 秒收集行为数据
-      setTimeout(() => {
-        const isHuman = (
-          mouseMoves > 2 && 
-          (Date.now() - startTime) > 1500 &&
-          getFingerprint().length > 10
-        );
+      // 如果是机器人，直接拦截
+      if (isLikelyBot()) {
+        window.location.href = 'https://brooklynindustries.com';
+        return;
+      }
 
-        if (isHuman) {
+      // 人类用户：等待至少 2 秒行为数据收集
+      setTimeout(() => {
+        // 行为验证（至少 2 次交互）
+        if (userInteractions >= 2) {
           turnstile.execute('#widget', {
             sitekey: '0x4AAAAAABQqGAPLf-8AjUZZ',
             callback: (token) => {
-              // 通过验证后设置 Cookie 并刷新
+              // 验证通过后设置 Cookie 并跳转
               document.cookie = `cf_verified=1; max-age=86400; path=/; secure`;
-              location.href = '/'; // 触发 _redirects 规则
+              window.location.href = '/'; // 触发 _redirects 规则
             }
           });
         } else {
-          location.href = 'https://brooklynindustries.com'; // 拦截机器人
+          window.location.href = 'https://brooklynindustries.com';
         }
       }, 2000);
     }
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/fingerprintjs2@2.1.4/dist/fingerprint2.min.js"></script>
+  <script>
+  Fingerprint2.get(components => {
+    const fingerprint = Fingerprint2.x64hash128(components.map(c => c.value).join(''), 31);
+    localStorage.setItem('fp', fingerprint); // 存储指纹用于后续比对
+  });
+  </script>
 </head>
 <body>
   <div id="widget" style="display:none;"></div> <!-- Turnstile 容器 -->
-  
-  <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
-      <p>Loading resources, please wait...</p> <!-- 伪装内容 -->
+  <div style="padding: 20px; font-family: Arial;">
+    <h2>Loading your content...</h2>
+    <p>Please wait while we verify your browser.</p>
   </div>
 </body>
 </html>
